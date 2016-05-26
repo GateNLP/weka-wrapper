@@ -21,4 +21,5 @@ ROOTDIR=`cd "$SCRIPTDIR/.."; pwd -P`
 
 pushd "$ROOTDIR" >/dev/null
 mvn -q exec:java -Dexec.mainClass="gate.lib.wekawrapper.WekaApplication" -Dexec.args="${model} ${header}"
+## java -cp $ROOTDIR/lib/'*':target/weka-wrapper-1.0-SNAPSHOT.jar gate.lib.wekawrapper.WekaApplication $model $header
 popd

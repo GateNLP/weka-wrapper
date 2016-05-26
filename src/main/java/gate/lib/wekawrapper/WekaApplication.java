@@ -11,6 +11,8 @@ import weka.core.SparseInstance;
 import weka.core.converters.ConverterUtils.DataSource;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Very simple wrapper for applying a model to feature vectors.
@@ -38,11 +40,27 @@ public class WekaApplication {
     String modelFileName = args[0];
     String headerFileName = args[1];
     
+    System.err.println("Argument 1: "+modelFileName);
+    System.err.println("Argument 2: "+headerFileName);
+    
+    
     File modelFile = new File(modelFileName);
     File headerFile = new File(headerFileName);
     
+    if(!modelFile.exists()) {
+      System.err.println("WekaApplication: Model file does not exist: "+modelFile.getAbsolutePath());
+      System.exit(1);
+    }
+    
     // Load the model
-    ObjectInputStream wois = new ObjectInputStream(new FileInputStream(modelFile));
+    ObjectInputStream wois = null;
+    try {
+      wois = new ObjectInputStream(new FileInputStream(modelFile));
+    } catch (IOException ex) {
+      System.err.println("WekaApplication: IO error when trying to open model file: "+modelFile.getAbsolutePath());
+      ex.printStackTrace(System.err);
+      System.exit(1);
+    }
     Classifier classifier = (Classifier) wois.readObject();
     wois.close();
     
@@ -53,7 +71,7 @@ public class WekaApplication {
     dataset.setClassIndex(dataset.numAttributes()-1);
     Attribute target = dataset.classAttribute();
     boolean isNominal = target.isNominal();
-    System.err.println("nomnal target="+isNominal);
+    //System.err.println("nomnal target="+isNominal);
     
     
     // connect to the invoking process
@@ -61,11 +79,14 @@ public class WekaApplication {
     // Send our hello 
     oos.writeObject("Hello from WekaApplication v1.0");
     ObjectInputStream ois = new ObjectInputStream(System.in);
+    // read the hello from the other side
+    Object obj = ois.readObject();
+    System.err.println("WekaApplication: got hello: "+obj);
     
     // read from the object input stream and expect our sparsedoublefeature vector
     // until we get a string STOP
     while(true) {
-      Object obj = ois.readObject();
+      obj = ois.readObject();
       if(obj.equals("STOP")) {
         System.err.println("Terminating WekaApplication");
         break;
