@@ -1,4 +1,11 @@
 # weka-wrapper
 
-A minimal wrapper around Weka for easier inclusion of Weka via a command-line interface
-and possibly other methods.
+A minimal wrapper around Weka for easy invocation of Weka by other Java processes.
+
+The primary purpose of this is to be able to run a process from the command line which will accept
+unclassified instances from a different process, apply a classifier, and send back the 
+prediction. For efficiency, ObjectInput/Output streams are used for the communcation.
+
+This makes it possible to invoke Weka and use a separately trained Weka model in the 
+GATE LearningFramework plugin (Weka cannot be directly used with this plugin because 
+there is no way to combine the licenses of all dependencies together with Weka.)
