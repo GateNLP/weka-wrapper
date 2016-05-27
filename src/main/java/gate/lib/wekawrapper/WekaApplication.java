@@ -11,8 +11,6 @@ import weka.core.SparseInstance;
 import weka.core.converters.ConverterUtils.DataSource;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Very simple wrapper for applying a model to feature vectors.
