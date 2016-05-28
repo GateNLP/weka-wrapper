@@ -9,3 +9,7 @@ prediction. For efficiency, ObjectInput/Output streams are used for the communca
 This makes it possible to invoke Weka and use a separately trained Weka model in the 
 GATE LearningFramework plugin (Weka cannot be directly used with this plugin because 
 there is no way to combine the licenses of all dependencies together with Weka.)
+
+## Applying a model to individual instances
+
+## Training a model from an ARFF file
