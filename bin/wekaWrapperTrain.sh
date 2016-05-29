@@ -28,7 +28,7 @@ pushd "$ROOTDIR" >/dev/null
 ## standard output (which is required here!)
 ## The -q parameter is supposed to work, but there have been reports that sometimes it still lets through INFO messages.
 ## An alternate approach is to set the log level via MAVEN_OPTS, so we do both
-export MAVEN_OPTS=-Dorg.slf4j.simpleLogger.defaultLogLevel=error
-mvn -q  exec:java -Dexec.mainClass="gate.lib.wekawrapper.WekaTraining" -Dexec.args="${arff} ${model} ${class} $*"
-#java -cp $ROOTDIR/lib/'*':target/weka-wrapper-1.0-SNAPSHOT.jar gate.lib.wekawrapper.WekaTraining ${arff} ${model} ${class} $*
+## export MAVEN_OPTS=-Dorg.slf4j.simpleLogger.defaultLogLevel=error
+## mvn -q  exec:java -Dexec.mainClass="gate.lib.wekawrapper.WekaTraining" -Dexec.args="${arff} ${model} ${class} $*"
+java -cp $ROOTDIR/target/'*':target/dependency/'*' gate.lib.wekawrapper.WekaTraining ${arff} ${model} ${class} $*
 popd >/dev/null
