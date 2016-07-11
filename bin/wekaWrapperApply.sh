@@ -12,5 +12,5 @@ pushd "$ROOTDIR" >/dev/null
 ## An alternate approach is to set the log level via MAVEN_OPTS, so we do both
 ## export MAVEN_OPTS=-Dorg.slf4j.simpleLogger.defaultLogLevel=error
 ## mvn -q exec:java -Dexec.mainClass="gate.lib.wekawrapper.WekaApplication" -Dexec.args="${model} ${header}"
-java -cp $ROOTDIR/target/'*':$ROOTDIR/target/dependency/'*' gate.lib.wekawrapper.WekaApplication $model $header
+java -cp "$ROOTDIR/target/"'*':"$ROOTDIR/target/dependency/"'*' gate.lib.wekawrapper.WekaApplication "$model" "$header"
 popd >/dev/null
