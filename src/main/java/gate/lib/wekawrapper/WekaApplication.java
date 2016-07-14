@@ -91,7 +91,11 @@ public class WekaApplication {
       }
       if(obj instanceof SparseDoubleVector) {
         SparseDoubleVector sdv = (SparseDoubleVector)obj;
-        SparseInstance instance = new SparseInstance(1.0, sdv.getValues() , sdv.getLocations(), dataset.numAttributes()-1);        
+        SparseInstance instance = new SparseInstance(1.0, sdv.getValues() , sdv.getLocations(), dataset.numAttributes()-1);    
+        double instanceWeight = sdv.getInstanceWeight();
+        if(!Double.isNaN(instanceWeight)) {
+          instance.setWeight(instanceWeight);
+        }
         instance.setDataset(dataset);
         double[] ret;
         if(isNominal) {

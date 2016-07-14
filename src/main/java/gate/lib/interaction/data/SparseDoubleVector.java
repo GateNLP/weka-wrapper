@@ -21,10 +21,11 @@ import java.io.Serializable;
  */
 public class SparseDoubleVector implements Serializable {
 
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 2L;
  
   protected int[] indices;
   protected double[] values;
+  protected double instanceWeight = Double.NaN;
   public SparseDoubleVector(int numberOfLocations) {
     indices = new int[numberOfLocations];
     values = new double[numberOfLocations];
@@ -33,5 +34,7 @@ public class SparseDoubleVector implements Serializable {
   public int[] getLocations() { return indices; }
   public double[] getValues() { return values; }
   public int nLocations() { return indices.length; }
+  public double getInstanceWeight () { return instanceWeight; }
+  public void setInstanceWeight(double weight) { instanceWeight = weight; }
   
 }
