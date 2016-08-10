@@ -1,14 +1,10 @@
 package gate.lib.wekawrapper;
 
 import gate.lib.interaction.data.SparseDoubleVector;
-import java.io.File;
-import java.io.FileInputStream;
+import gate.lib.wekawrapper.utils.WekaWrapperUtils;
 import java.io.IOException;
 import weka.classifiers.Classifier;
-import weka.core.Attribute;
 import weka.core.Instances;
-import weka.core.SparseInstance;
-import weka.core.converters.ConverterUtils.DataSource;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 
@@ -41,36 +37,11 @@ public class WekaApplication {
     System.err.println("Argument 1: "+modelFileName);
     System.err.println("Argument 2: "+headerFileName);
     
-    
-    File modelFile = new File(modelFileName);
-    File headerFile = new File(headerFileName);
-    
-    if(!modelFile.exists()) {
-      System.err.println("WekaApplication: Model file does not exist: "+modelFile.getAbsolutePath());
-      System.exit(1);
-    }
-    
-    // Load the model
-    ObjectInputStream wois = null;
-    try {
-      wois = new ObjectInputStream(new FileInputStream(modelFile));
-    } catch (IOException ex) {
-      System.err.println("WekaApplication: IO error when trying to open model file: "+modelFile.getAbsolutePath());
-      ex.printStackTrace(System.err);
-      System.exit(1);
-    }
-    Classifier classifier = (Classifier) wois.readObject();
-    wois.close();
-    
-    // Load the ARFF header
-    DataSource source = new DataSource(headerFileName);
-    Instances dataset = source.getDataSet();
-    
-    dataset.setClassIndex(dataset.numAttributes()-1);
-    Attribute target = dataset.classAttribute();
-    boolean isNominal = target.isNominal();
-    //System.err.println("nomnal target="+isNominal);
-    
+    Classifier classifier = WekaWrapperUtils.loadClassifier(modelFileName);
+    if(classifier == null) System.exit(1);
+
+    Instances dataset = WekaWrapperUtils.loadDataset(headerFileName);
+
     
     // connect to the invoking process
     ObjectOutputStream oos = new ObjectOutputStream(System.out);
@@ -91,19 +62,8 @@ public class WekaApplication {
       }
       if(obj instanceof SparseDoubleVector) {
         SparseDoubleVector sdv = (SparseDoubleVector)obj;
-        SparseInstance instance = new SparseInstance(1.0, sdv.getValues() , sdv.getLocations(), dataset.numAttributes()-1);    
-        double instanceWeight = sdv.getInstanceWeight();
-        if(!Double.isNaN(instanceWeight)) {
-          instance.setWeight(instanceWeight);
-        }
-        instance.setDataset(dataset);
-        double[] ret;
-        if(isNominal) {
-          ret = classifier.distributionForInstance(instance);
-        } else {
-          ret = new double[1];
-          ret[0] = classifier.classifyInstance(instance);
-        }
+        double[] ret = WekaWrapperUtils.classifyInstance(sdv, classifier, dataset);
+        if(ret==null) System.exit(1);
         oos.writeObject(ret);
         oos.flush();
       } else {
