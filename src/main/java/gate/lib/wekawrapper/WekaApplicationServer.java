@@ -57,6 +57,8 @@ import weka.core.Instances;
  * the number of threads is set to 0. In this case a new thread is created for each
  * (keep-alive) http connection to a client.
  * 
+ * IMPORTANT: the binary exchange protocol is still untested!!
+ * 
  * @author Johann Petrak
  */
 public class WekaApplicationServer extends NanoHTTPD {
