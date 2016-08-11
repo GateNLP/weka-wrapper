@@ -9,6 +9,7 @@
 package gate.lib.wekawrapper;
 
 import fi.iki.elonen.NanoHTTPD;
+import gate.lib.interaction.data.SparseDoubleVector;
 import gate.lib.wekawrapper.utils.WekaWrapperUtils;
 import java.io.ByteArrayInputStream;
 
@@ -24,7 +25,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.print.attribute.IntegerSyntax;
 import weka.classifiers.Classifier;
 import weka.core.Instances;
 
@@ -51,6 +51,10 @@ import weka.core.Instances;
  * of the classifier instance for each thread in the pool. If this is not possible we have
  * to create or own thread pool just for the classification and use that. 
  * (Note there is a Weka function for creating copies of classifiers!!)
+ * 
+ * NOTE: at least for now we use the standard threading model (without a thread pool) if 
+ * the number of threads is set to 0. In this case a new thread is created for each
+ * (keep-alive) http connection to a client.
  * 
  * @author Johann Petrak
  */
@@ -102,13 +106,15 @@ public class WekaApplicationServer extends NanoHTTPD {
       ex.printStackTrace(System.err);
       System.exit(1);
     }
-    ExecutorService pool = Executors.newFixedThreadPool(nrThreads);
-    BoundRunner runner = new BoundRunner(pool);
-    server.setAsyncRunner(runner);
-    System.err.println("Thread pool created");
+    if(nrThreads > 0) {
+      ExecutorService pool = Executors.newFixedThreadPool(nrThreads);
+      BoundRunner runner = new BoundRunner(pool);
+      server.setAsyncRunner(runner);
+      System.err.println("Thread pool created for nr threads: "+nrThreads);
+    }
     boolean error = false;
     try {
-      server.start(NanoHTTPD.SOCKET_READ_TIMEOUT,true);
+      server.start(NanoHTTPD.SOCKET_READ_TIMEOUT,false);
       System.err.println("Server started, socket timeout is "+NanoHTTPD.SOCKET_READ_TIMEOUT);
       // now wait until we get the shutdown flag;
       while(!haveShutdown) {
@@ -117,7 +123,7 @@ public class WekaApplicationServer extends NanoHTTPD {
         } catch (InterruptedException ex) {
           //
         }
-        System.err.println("Checking for shutdown flag");
+        //System.err.println("Checking for shutdown flag");
       }
       System.err.println("Exiting");
       // this will not just exit, so we try to explicitly exit 
@@ -190,6 +196,7 @@ public class WekaApplicationServer extends NanoHTTPD {
       String remoteIP = session.getRemoteIpAddress();
       System.err.println("From remote IP: "+remoteIP);
       
+      // Actual handling of the classification request ....
       if(contentType.equals("application/json")) {
         session.parseBody(bodyMap);
         System.err.println("BodyMap: "+bodyMap);
@@ -197,18 +204,35 @@ public class WekaApplicationServer extends NanoHTTPD {
         if(json == null || json.trim().isEmpty()) {
           return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Empty request body"); 
         }
-        return newFixedLengthResponse(Response.Status.OK,"application/json","this should be json");
+        // parse json into sparse vector
+        SparseDoubleVector sdv = null;
+        double ret[] = WekaWrapperUtils.classifyInstance(sdv, classifier, dataset);
+        if(accept.equals("application/json")) {
+          // convert ret to json and return
+          String retjson = WekaWrapperUtils.pred2json(ret);
+          return newFixedLengthResponse(Response.Status.OK,"application/json",retjson);
+        } else {
+          // convert ret to ObjectStream buffer and return
+          byte[] retbin = WekaWrapperUtils.pred2binary(ret);
+          ByteArrayInputStream bis = new ByteArrayInputStream(retbin);
+          return newFixedLengthResponse(Response.Status.OK, "application/binary", bis, retbin.length);        
+        }
       } else { // must be octet-stream
         // get binary data
         InputStream is = session.getInputStream();
-        
-        // If we want to stop the server do this:
-        // this.stop();
-      
-        // return binary data
-        byte[] buffer = new byte[100];
-        ByteArrayInputStream bis = new ByteArrayInputStream(buffer);
-        return newFixedLengthResponse(Response.Status.OK, "application/binary", bis, buffer.length);        
+        // parse object stream into vector
+        SparseDoubleVector sdv = null;
+        double ret[] = WekaWrapperUtils.classifyInstance(sdv, classifier, dataset);
+        if(accept.equals("application/json")) {
+          // convert ret to json and return
+          String retjson = WekaWrapperUtils.pred2json(ret);
+          return newFixedLengthResponse(Response.Status.OK,"application/json",retjson);          
+        } else {
+          // convert ret to ObjectStream buffer and return
+          byte[] retbin = WekaWrapperUtils.pred2binary(ret);
+          ByteArrayInputStream bis = new ByteArrayInputStream(retbin);
+          return newFixedLengthResponse(Response.Status.OK, "application/binary", bis, retbin.length);                  
+        }
       }
     } catch (Exception ex) {
       Logger.getLogger(WekaApplicationServer.class.getName()).log(Level.SEVERE, null, ex);
