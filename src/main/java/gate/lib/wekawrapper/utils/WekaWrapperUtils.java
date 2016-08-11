@@ -100,7 +100,7 @@ public class WekaWrapperUtils {
           Instances dataset) {
     Attribute target = dataset.classAttribute();
     boolean isNominal = target.isNominal();
-
+    System.err.println("Classifying from sdv "+sdv);
     SparseInstance instance = new SparseInstance(1.0, sdv.getValues(), sdv.getLocations(), dataset.numAttributes() - 1);
     double instanceWeight = sdv.getInstanceWeight();
     if (!Double.isNaN(instanceWeight)) {

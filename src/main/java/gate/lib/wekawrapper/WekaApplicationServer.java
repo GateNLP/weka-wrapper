@@ -12,6 +12,7 @@ import fi.iki.elonen.NanoHTTPD;
 import gate.lib.interaction.data.SparseDoubleVector;
 import gate.lib.wekawrapper.utils.WekaWrapperUtils;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -180,10 +181,12 @@ public class WekaApplicationServer extends NanoHTTPD {
       }
       // check the content type header
       String contentType = headers.get("content-type");
+      System.err.println("COntent type is "+contentType);
       if(contentType == null || (!contentType.equals("application/json") && !contentType.equals("application/octet-stream"))) {
         return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Only accepting application/json or application/octet-stream content");        
       }
       String accept = headers.get("accept");
+      System.err.println("Accept is "+contentType);
       if(accept == null || (!accept.equals("application/json") && !accept.equals("application/octet-stream"))) {
         return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Only sending application/json or application/octet-stream content");        
       }
@@ -205,7 +208,7 @@ public class WekaApplicationServer extends NanoHTTPD {
           return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Empty request body"); 
         }
         // parse json into sparse vector
-        SparseDoubleVector sdv = null;
+        SparseDoubleVector sdv = WekaWrapperUtils.json2sdv(json);
         double ret[] = WekaWrapperUtils.classifyInstance(sdv, classifier, dataset);
         if(accept.equals("application/json")) {
           // convert ret to json and return
@@ -220,8 +223,13 @@ public class WekaApplicationServer extends NanoHTTPD {
       } else { // must be octet-stream
         // get binary data
         InputStream is = session.getInputStream();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(2048);
+        byte[] read = new byte[512];
+        for(int i; -1 != (i = is.read(read)); bos.write(read,0,i));
+        is.close();
+        byte[] buffer = bos.toByteArray();
         // parse object stream into vector
-        SparseDoubleVector sdv = null;
+        SparseDoubleVector sdv = WekaWrapperUtils.binary2sdv(buffer);
         double ret[] = WekaWrapperUtils.classifyInstance(sdv, classifier, dataset);
         if(accept.equals("application/json")) {
           // convert ret to json and return
