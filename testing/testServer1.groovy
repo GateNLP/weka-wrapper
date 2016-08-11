@@ -29,3 +29,5 @@ if(status == 200) {
   body = resp.getBody()
   println("Got body, class="+body.getClass()+" obj="+body)
 }
+
+Unirest.post("http://localhost:8080/stop").asString()
