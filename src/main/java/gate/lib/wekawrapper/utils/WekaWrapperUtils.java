@@ -128,7 +128,7 @@ public class WekaWrapperUtils {
   }
 
   
-  public static byte[] pred2binary(double[] pred) {
+  public static byte[] preds2binary(double[][] pred) {
     try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
        ObjectOutput out = new ObjectOutputStream(bos)) {
        out.writeObject(pred);
@@ -145,7 +145,7 @@ public class WekaWrapperUtils {
    * @param buffer
    * @return 
    */
-  public static SparseDoubleVector binary2sdv(byte[] buffer) {
+  public static SparseDoubleVector[] binary2sdvs(byte[] buffer) {
     try (ByteArrayInputStream bis = new ByteArrayInputStream(buffer);
       ObjectInput in = new ObjectInputStream(bis)) {
       Object obj = in.readObject();
@@ -155,40 +155,71 @@ public class WekaWrapperUtils {
       if(obj == null) { 
         throw new RuntimeException("Got null buffer");
       } 
-      if(!(obj instanceof SparseDoubleVector)) {                
-        throw new RuntimeException("Got something that is not a SparseDoubleVector or the stop signal but of type "+obj.getClass()+" value="+obj);        
+      if(!(obj instanceof SparseDoubleVector[])) {                
+        throw new RuntimeException("Got something that is not a SparseDoubleVector[] or the stop signal but of type "+obj.getClass()+" value="+obj);        
       }
-      return (SparseDoubleVector)obj;
+      return (SparseDoubleVector[])obj;
     } catch(Exception ex) {
       throw new RuntimeException("Problem unpacking object buffer",ex);
     }
   }
   
-  public static String pred2json(double[] pred) {
-    return Json.array(pred).toString();
+  public static String preds2json(double[][] preds) {
+    JsonArray outer = Json.array().asArray();
+    for(double[] pred : preds) {
+      outer.add(Json.array(pred));
+    }
+    return outer.toString();
   }
 
-  public static SparseDoubleVector json2sdv(String json) {
+  public static SparseDoubleVector[] json2sdvs(String json) {
     JsonValue jv = Json.parse(json);
     // we expect a "JsonObject"  which corresponds to a map. That map must have
     // the entries "indices", "values" and optionally "instanceWeight";
     if(jv.isObject()) {
-      JsonArray jindices = jv.asObject().get("indices").asArray();
+      // indices and values are arrays of arrays
+      // indices may be missing in which case the values array is assumed to be dense      
+      JsonArray jindices = null;
+      JsonValue jindicesv = jv.asObject().get("indices");
+      if(jindicesv != null) jindices = jindicesv.asArray();
+      
       JsonArray jvalues = jv.asObject().get("values").asArray();
-      JsonValue wobj = jv.asObject().get("instanceWeight");
-      double instanceWeight = Double.NaN;
-      if(wobj!=null) {
-        instanceWeight = wobj.asDouble();
+      // weights may also be missing
+      JsonArray jweights = null;
+      JsonValue jweightsv = jv.asObject().get("weights");
+      if(jweightsv != null) jweights = jweightsv.asArray();
+
+      // create the array of sdvs we want to return
+      SparseDoubleVector[] sdvs = new SparseDoubleVector[jvalues.size()];
+
+      // iterate through all the individual vectors
+      for(int i=0; i<jvalues.size(); i++) {
+        
+        // get the weight if we have one
+        double instanceWeight = Double.NaN;
+        if(jweights!=null) {
+          instanceWeight = jweights.get(i).asDouble();
+        }
+        // get the values 
+        JsonArray jvi = jvalues.get(i).asArray();
+        SparseDoubleVector sdv = new SparseDoubleVector(jvi.size());
+        sdvs[i] = sdv;
+        // if we have indices, get them as well
+        JsonArray jii = null;
+        if(jindices != null) {
+          jii = jindices.get(i).asArray();
+        }
+        sdv.setInstanceWeight(instanceWeight);
+        // get the data structures from the sdv to fill
+        int[] indices = sdv.getLocations();      
+        double[] values = sdv.getValues();
+        for(int j = 0; j<jvi.size(); j++) {
+          if(jii==null) indices[j]  = j;
+          else indices[j] = jii.get(j).asInt();
+          values[j] = jvi.get(j).asDouble();
+        }
       }
-      SparseDoubleVector sdv = new SparseDoubleVector(jindices.size());
-      sdv.setInstanceWeight(instanceWeight);
-      int[] indices = sdv.getLocations();      
-      double[] values = sdv.getValues();
-      for(int i = 0; i<jindices.size(); i++) {
-        indices[i] = jindices.get(i).asInt();
-        values[i] = jvalues.get(i).asDouble();
-      }
-      return sdv;
+      return sdvs;
     } else {
       throw new RuntimeException("JSON not parsable, got "+json);
     }

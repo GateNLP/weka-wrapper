@@ -209,16 +209,22 @@ public class WekaApplicationServer extends NanoHTTPD {
         if(json == null || json.trim().isEmpty()) {
           return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Empty request body"); 
         }
-        // parse json into sparse vector
-        SparseDoubleVector sdv = WekaWrapperUtils.json2sdv(json);
-        double ret[] = WekaWrapperUtils.classifyInstance(sdv, classifier, dataset);
+        // parse json into sparse vectors
+        SparseDoubleVector sdvs[] = WekaWrapperUtils.json2sdvs(json);
+        // Got an array of vectors to classify, so loop through them and get the result
+        // for all of them
+        double rets[][] = new double[sdvs.length][];
+        for(int i=0; i<sdvs.length;i++) {
+          rets[i] = WekaWrapperUtils.classifyInstance(sdvs[i], classifier, dataset);
+        }
+        // send back in the requested format
         if(accept.equals("application/json")) {
           // convert ret to json and return
-          String retjson = WekaWrapperUtils.pred2json(ret);
+          String retjson = WekaWrapperUtils.preds2json(rets);
           return newFixedLengthResponse(Response.Status.OK,"application/json",retjson);
         } else {
           // convert ret to ObjectStream buffer and return
-          byte[] retbin = WekaWrapperUtils.pred2binary(ret);
+          byte[] retbin = WekaWrapperUtils.preds2binary(rets);
           ByteArrayInputStream bis = new ByteArrayInputStream(retbin);
           return newFixedLengthResponse(Response.Status.OK, "application/binary", bis, retbin.length);        
         }
@@ -231,17 +237,20 @@ public class WekaApplicationServer extends NanoHTTPD {
         is.close();
         byte[] buffer = bos.toByteArray();
         // parse object stream into vector
-        SparseDoubleVector sdv = WekaWrapperUtils.binary2sdv(buffer);
-        double ret[] = WekaWrapperUtils.classifyInstance(sdv, classifier, dataset);
+        SparseDoubleVector sdvs[] = WekaWrapperUtils.binary2sdvs(buffer);
+        double rets[][] = new double[sdvs.length][];
+        for(int i=0; i<sdvs.length;i++) {
+          rets[i] = WekaWrapperUtils.classifyInstance(sdvs[i], classifier, dataset);
+        }
         if(accept.equals("application/json")) {
           // convert ret to json and return
-          String retjson = WekaWrapperUtils.pred2json(ret);
-          return newFixedLengthResponse(Response.Status.OK,"application/json",retjson);          
+          String retjson = WekaWrapperUtils.preds2json(rets);
+          return newFixedLengthResponse(Response.Status.OK,"application/json",retjson);
         } else {
           // convert ret to ObjectStream buffer and return
-          byte[] retbin = WekaWrapperUtils.pred2binary(ret);
+          byte[] retbin = WekaWrapperUtils.preds2binary(rets);
           ByteArrayInputStream bis = new ByteArrayInputStream(retbin);
-          return newFixedLengthResponse(Response.Status.OK, "application/binary", bis, retbin.length);                  
+          return newFixedLengthResponse(Response.Status.OK, "application/binary", bis, retbin.length);        
         }
       }
     } catch (Exception ex) {
