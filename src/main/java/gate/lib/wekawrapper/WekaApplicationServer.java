@@ -77,6 +77,7 @@ public class WekaApplicationServer extends NanoHTTPD {
   
   private static boolean haveShutdown = false;
   
+  public static final String PROGNAME = "WekaApplicationServer";
   
   public static void main(String[] args) {
     // Parse the options and check values: we expect the following parameters in this order
@@ -88,13 +89,13 @@ public class WekaApplicationServer extends NanoHTTPD {
     // NOTE: it seems it is not possible to specify the IP address to bind to???
     
     if(args.length != 4) {
-      System.err.println("Need exactly 4 arguments: modelfile, arffheaderfile, portnumber, nthreads");
+      System.err.println(PROGNAME+" - Need exactly 4 arguments: modelfile, arffheaderfile, portnumber, nthreads");
       System.exit(1);
     }
     
-    System.err.println("Loading model "+args[0]);
+    System.err.println(PROGNAME+" - Loading model "+args[0]);
     classifier = WekaWrapperUtils.loadClassifier(args[0]);
-    System.err.println("Loading headers "+args[1]);
+    System.err.println(PROGNAME+" - Loading headers "+args[1]);
     dataset = WekaWrapperUtils.loadDataset(args[1]);
     
     int port = Integer.parseInt(args[2]);
@@ -103,9 +104,9 @@ public class WekaApplicationServer extends NanoHTTPD {
     WekaApplicationServer server = null;
     try {      
       server = new WekaApplicationServer(port);
-      System.err.println("Server created on port "+port);
+      System.err.println(PROGNAME+" - Server created on port "+port);
     } catch (IOException ex) {
-      System.err.println("Could not start server");
+      System.err.println(PROGNAME+" - Could not start server");
       ex.printStackTrace(System.err);
       System.exit(1);
     }
@@ -113,12 +114,12 @@ public class WekaApplicationServer extends NanoHTTPD {
       ExecutorService pool = Executors.newFixedThreadPool(nrThreads);
       BoundRunner runner = new BoundRunner(pool);
       server.setAsyncRunner(runner);
-      System.err.println("Thread pool created for nr threads: "+nrThreads);
+      System.err.println(PROGNAME+" - Thread pool created for nr threads: "+nrThreads);
     }
     boolean error = false;
     try {
       server.start(NanoHTTPD.SOCKET_READ_TIMEOUT,false);
-      System.err.println("Server started, socket timeout is "+NanoHTTPD.SOCKET_READ_TIMEOUT);
+      System.err.println(PROGNAME+" - Server started, socket timeout is "+NanoHTTPD.SOCKET_READ_TIMEOUT);
       // now wait until we get the shutdown flag;
       while(!haveShutdown) {
         try {
@@ -128,12 +129,12 @@ public class WekaApplicationServer extends NanoHTTPD {
         }
         //System.err.println("Checking for shutdown flag");
       }
-      System.err.println("Exiting");
+      System.err.println(PROGNAME+" - Exiting");
       // this will not just exit, so we try to explicitly exit 
       // This is a hack, we need to find out how to properly shut ourselves down
       System.exit(0);
     } catch (IOException ex) {
-      System.err.println("Could not start server");
+      System.err.println(PROGNAME+" - Could not start server");
       ex.printStackTrace(System.err);
       error = true;
     } finally {
@@ -147,9 +148,9 @@ public class WekaApplicationServer extends NanoHTTPD {
   public Response serve(IHTTPSession session) {
     try {
       String uri = session.getUri();
-      System.err.println("Got the URI: "+uri);
+      //System.err.println("Got the URI: "+uri);
       Map<String, String> headers = session.getHeaders();
-      System.err.println("Headers: "+headers);
+      //System.err.println("Headers: "+headers);
       // if the uri is /stop we stop the servers
       if(uri.equals("/stop")) {        
         // return an empty OK response after starting a thread that should shut down 
@@ -163,48 +164,48 @@ public class WekaApplicationServer extends NanoHTTPD {
               Thread.sleep(1500);
               //System.err.println("Stopping ");
               //stop();              
-              System.err.println("Signalling shutdown");
+              //System.err.println("Signalling shutdown");
               haveShutdown = true;
             } catch (InterruptedException ex) {
               //
             }
           }
         }).start();
-        System.err.println("Sending response");
+        //System.err.println("Sending response");
         Response res  =  newFixedLengthResponse(Response.Status.OK, "text/plain", "Shutting down"); 
         res.addHeader("Connection", "close");
         return res;
       }
 
       Method method = session.getMethod();      
-      System.err.println("Method="+method);
+      //System.err.println("Method="+method);
       if(method != Method.POST) {
         return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Only accepting POST requests");
       }
       // check the content type header
       String contentType = headers.get("content-type");
-      System.err.println("COntent type is "+contentType);
+      //System.err.println("COntent type is "+contentType);
       if(contentType == null || (!contentType.equals("application/json") && !contentType.equals("application/octet-stream"))) {
         return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Only accepting application/json or application/octet-stream content");        
       }
       String accept = headers.get("accept");
-      System.err.println("Accept is "+contentType);
+      //System.err.println("Accept is "+contentType);
       if(accept == null || (!accept.equals("application/json") && !accept.equals("application/octet-stream"))) {
         return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Only sending application/json or application/octet-stream content");        
       }
       //Map<String, List<String>> parms = session.getParameters();
       Map<String,String> parms = session.getParms();
-      System.err.println("Parms: "+parms);
+      //System.err.println("Parms: "+parms);
       HashMap<String,String> bodyMap = new HashMap<String,String>();
       
       
       String remoteIP = session.getRemoteIpAddress();
-      System.err.println("From remote IP: "+remoteIP);
+      //System.err.println("From remote IP: "+remoteIP);
       
       // Actual handling of the classification request ....
       if(contentType.equals("application/json")) {
         session.parseBody(bodyMap);
-        System.err.println("BodyMap: "+bodyMap);
+        //System.err.println("BodyMap: "+bodyMap);
         String json = bodyMap.get("postData");
         if(json == null || json.trim().isEmpty()) {
           return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Empty request body"); 
@@ -221,6 +222,7 @@ public class WekaApplicationServer extends NanoHTTPD {
         if(accept.equals("application/json")) {
           // convert ret to json and return
           String retjson = WekaWrapperUtils.preds2json(rets);
+          //System.err.println("WekaWrapper-Server: sending back: "+retjson);
           return newFixedLengthResponse(Response.Status.OK,"application/json",retjson);
         } else {
           // convert ret to ObjectStream buffer and return
@@ -254,7 +256,6 @@ public class WekaApplicationServer extends NanoHTTPD {
         }
       }
     } catch (Exception ex) {
-      Logger.getLogger(WekaApplicationServer.class.getName()).log(Level.SEVERE, null, ex);
       return newFixedLengthResponse(Response.Status.NOT_ACCEPTABLE,"text/plain",ex.getMessage());
     }
   }

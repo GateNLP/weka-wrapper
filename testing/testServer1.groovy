@@ -21,7 +21,7 @@ json = Json.object().add("values",jv)
 json.add("indices",ji)
 println("json="+json)
 
-resp = Unirest.post("http://localhost:8080/").
+resp = Unirest.post("http://localhost:7000/").
   header("accept","application/json").
   header("content-type","application/json").
   body(json.toString()).
@@ -35,4 +35,4 @@ if(status == 200) {
   println("Got body, class="+body.getClass()+" obj="+body)
 }
 
-Unirest.post("http://localhost:8080/stop").asString()
+Unirest.post("http://localhost:7000/stop").asString()

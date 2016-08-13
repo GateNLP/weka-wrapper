@@ -10,6 +10,7 @@ package gate.lib.wekawrapper.utils;
 
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
+import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
 import gate.lib.interaction.data.SparseDoubleVector;
 import java.io.ByteArrayInputStream;
@@ -26,6 +27,7 @@ import weka.core.Attribute;
 import weka.core.Instances;
 import weka.core.SparseInstance;
 import weka.core.converters.ConverterUtils;
+import static gate.lib.wekawrapper.WekaApplicationServer.PROGNAME;
 
 /**
  * Various static utility functions.
@@ -45,7 +47,7 @@ public class WekaWrapperUtils {
     File modelFile = new File(modelFileName);
 
     if (!modelFile.exists()) {
-      System.err.println("WekaApplication: Model file does not exist: " + modelFile.getAbsolutePath());
+      System.err.println(PROGNAME+" - WekaApplication: Model file does not exist: " + modelFile.getAbsolutePath());
       return null;
     }
 
@@ -54,7 +56,7 @@ public class WekaWrapperUtils {
     try {
       wois = new ObjectInputStream(new FileInputStream(modelFile));
     } catch (IOException ex) {
-      System.err.println("WekaApplication: IO error when trying to open model file: " + modelFile.getAbsolutePath());
+      System.err.println(PROGNAME+" - WekaApplication: IO error when trying to open model file: " + modelFile.getAbsolutePath());
       ex.printStackTrace(System.err);
       return null;
     }
@@ -79,14 +81,14 @@ public class WekaWrapperUtils {
     try {
       source = new ConverterUtils.DataSource(headerFileName);
     } catch (Exception ex) {
-      System.err.println("Could not get the data source: " + ex.getMessage());
+      System.err.println(PROGNAME+" - Could not get the data source: " + ex.getMessage());
       return null;
     }
     Instances dataset;
     try {
       dataset = source.getDataSet();
     } catch (Exception ex) {
-      System.err.println("Could not get the Weka header dataset: " + ex.getMessage());
+      System.err.println(PROGNAME+" - Could not get the Weka header dataset: " + ex.getMessage());
       return null;
     }
 
@@ -100,7 +102,7 @@ public class WekaWrapperUtils {
           Instances dataset) {
     Attribute target = dataset.classAttribute();
     boolean isNominal = target.isNominal();
-    System.err.println("Classifying from sdv "+sdv);
+    //System.err.println("Classifying from sdv "+sdv);
     SparseInstance instance = new SparseInstance(1.0, sdv.getValues(), sdv.getLocations(), dataset.numAttributes() - 1);
     double instanceWeight = sdv.getInstanceWeight();
     if (!Double.isNaN(instanceWeight)) {
@@ -112,7 +114,7 @@ public class WekaWrapperUtils {
       try {
         ret = classifier.distributionForInstance(instance);
       } catch (Exception ex) {
-        System.err.println("Error trying to get probability distribution for instance: "+ex.getMessage());
+        System.err.println(PROGNAME+" - Error trying to get probability distribution for instance: "+ex.getMessage());
         return null;
       }
     } else {
@@ -120,7 +122,7 @@ public class WekaWrapperUtils {
       try {
         ret[0] = classifier.classifyInstance(instance);
       } catch (Exception ex) {
-        System.err.println("Error trying to classify instance: "+ex.getMessage());
+        System.err.println(PROGNAME+" - Error trying to classify instance: "+ex.getMessage());
         return null;
       }
     }
@@ -169,7 +171,8 @@ public class WekaWrapperUtils {
     for(double[] pred : preds) {
       outer.add(Json.array(pred));
     }
-    return outer.toString();
+    JsonObject retval = Json.object().add("preds",outer);
+    return retval.toString();
   }
 
   public static SparseDoubleVector[] json2sdvs(String json) {
