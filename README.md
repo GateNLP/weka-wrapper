@@ -50,3 +50,22 @@ This is done by running the folowing command:
 ./bin/wekaWrapperTrain.sh <arffFile> <modelFile> <javaClass> [<parm1> <parm2> ...]
 ````
 Where `arffFile` is the full path to an ARFF file containing the data to train from, the `modelFile` is the full path to the file where the model should be saved, and `javaClass` is the full class of the Weka classifier to use for training. All remaining arguments are interpreted as parameters for the weka algorithm and passed on to it. 
+
+## Starting the server
+
+This is done by running the following command:
+````
+./bin/wekaWrapperServer.sh <modelFile> <arffHeaderFile> <portnumber> <nrThreads>
+````
+
+This will create a server endpoint at http://127.0.0.1:<portnumber> which accepts 
+POST requests of the following form:
+* content type must be `application/json`
+* accept must be `application/json`
+* body must be a JSON string that represents an array of sparse double vectors in the following way:
+  * element "indices" is a vector of integer vectors, where each inner integer vector gives the indices/dimension numbers of the corresponding values
+  * element "values" is a vector of double vectors, where each inner double is the value at the corresponding dimension
+  * weights is a vector of double values where each value is the weight of the corresponding instance
+
+The server will send back a JSON string of the following form
+* element "preds" which is a vector of double vectors, each inner vector corresponds to the prediction for each of the instances sent to the server. The inner vector is either of length 1, then it contains the prediction (e.g. for regression) or of length greater than 1, then it contains the probabilities for each class for classification.
