@@ -4,7 +4,7 @@
   <groupId>uk.ac.gate.lib</groupId>
   <artifactId>weka-wrapper</artifactId>
   <packaging>jar</packaging>
-  <version>3.5.1</version> <!-- makedist -->
+  <version>3.5.4</version> <!-- makedist -->
   <name>weka-wrapper</name>
   <url>https://github.com/johann-petrak/weka-wrapper</url>
   <dependencies>
