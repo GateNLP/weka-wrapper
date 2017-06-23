@@ -2,7 +2,7 @@
 
 ## Start a Weka server
 
-version=3.5.1
+version=3.8
 
 
 ## Find where the weka-wrapper directory is

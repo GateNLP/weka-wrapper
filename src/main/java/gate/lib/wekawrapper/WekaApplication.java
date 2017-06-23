@@ -29,10 +29,20 @@ public class WekaApplication {
    */
   public static void main(String args[]) throws IOException, ClassNotFoundException, Exception {
     if(args.length != 2) {
-      throw new RuntimeException("Not exactly two arguments: modelpath, arffheaderfile");
+      System.err.println("Not exactly two arguments: modelpath, arffheaderfile");
+      System.exit(1);
     }
     String modelFileName = args[0];
     String headerFileName = args[1];
+
+    if(modelFileName == null || modelFileName.isEmpty()) {
+      System.err.println("No model file name specified, need modelpath and arffheaderfilepath");
+      System.exit(1);
+    }
+    if(headerFileName == null || headerFileName.isEmpty()) {
+      System.err.println("No header file name specified, need modelpath and arffheaderfilepath");
+      System.exit(1);
+    }
     
     System.err.println("Argument 1: "+modelFileName);
     System.err.println("Argument 2: "+headerFileName);

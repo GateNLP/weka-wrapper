@@ -23,6 +23,7 @@ or
 * To install by cloning the GitHub repository, first clone the repository, then run the
 following commands:
 ````
+mvn clean
 mvn dependency:copy-dependencies
 mvn install
 ````
