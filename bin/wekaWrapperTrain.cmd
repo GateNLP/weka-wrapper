@@ -1,7 +1,6 @@
 @ECHO OFF
 
-SET ROOTDIR=%1
-shift
+SET ROOTDIR=%WEKA_WRAPPER_HOME%
 SET arff=%1
 shift
 SET model=%1

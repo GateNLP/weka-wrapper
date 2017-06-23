@@ -1,8 +1,8 @@
 @ECHO OFF
 
-SET ROOTDIR=%1
-SET model=%2
-SET header=%3
+SET ROOTDIR=%WEKA_WRAPPER_HOME%
+SET model=%1
+SET header=%2
 
 SET java=java
 if not [%JRE_HOME%]==[] SET java=%JRE_HOME%\bin\java.exe
